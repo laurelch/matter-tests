@@ -458,9 +458,9 @@ CMAKE_CACHEFILE_DIR:INTERNAL=/common/home/twm70/Repos/matter
 //Major version of cmake used to create the current loaded cache
 CMAKE_CACHE_MAJOR_VERSION:INTERNAL=3
 //Minor version of cmake used to create the current loaded cache
-CMAKE_CACHE_MINOR_VERSION:INTERNAL=22
+CMAKE_CACHE_MINOR_VERSION:INTERNAL=28
 //Patch version of cmake used to create the current loaded cache
-CMAKE_CACHE_PATCH_VERSION:INTERNAL=1
+CMAKE_CACHE_PATCH_VERSION:INTERNAL=3
 //ADVANCED property for variable: CMAKE_COLOR_MAKEFILE
 CMAKE_COLOR_MAKEFILE-ADVANCED:INTERNAL=1
 //Path to CMake executable.
@@ -599,7 +599,7 @@ CMAKE_RANLIB-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_READELF
 CMAKE_READELF-ADVANCED:INTERNAL=1
 //Path to CMake installation.
-CMAKE_ROOT:INTERNAL=/usr/share/cmake-3.22
+CMAKE_ROOT:INTERNAL=/usr/share/cmake-3.28
 //ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS
 CMAKE_SHARED_LINKER_FLAGS-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_SHARED_LINKER_FLAGS_DEBUG
@@ -643,7 +643,7 @@ FIND_PACKAGE_MESSAGE_DETAILS_OpenMP_C:INTERNAL=[-fopenmp][/usr/lib/gcc/x86_64-li
 //Details about finding OpenMP_CXX
 FIND_PACKAGE_MESSAGE_DETAILS_OpenMP_CXX:INTERNAL=[-fopenmp][/usr/lib/gcc/x86_64-linux-gnu/11/libgomp.so][/usr/lib/x86_64-linux-gnu/libpthread.a][v4.5()]
 //Details about finding Python
-FIND_PACKAGE_MESSAGE_DETAILS_Python:INTERNAL=[/common/home/twm70/miniforge3/bin/python3.1][cfound components: Interpreter ][v3.12.10()]
+FIND_PACKAGE_MESSAGE_DETAILS_Python:INTERNAL=[/common/home/twm70/miniforge3/bin/python3][cfound components: Interpreter ][v3.12.10()]
 //Details about finding Threads
 FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
 //ADVANCED property for variable: OPENVDB_INCLUDE_DIRS
@@ -701,10 +701,10 @@ _Python_Compiler_REASON_FAILURE:INTERNAL=
 //Development reason failure
 _Python_Development_REASON_FAILURE:INTERNAL=
 //Path to a program.
-_Python_EXECUTABLE:INTERNAL=/common/home/twm70/miniforge3/bin/python3.1
+_Python_EXECUTABLE:INTERNAL=/common/home/twm70/miniforge3/bin/python3
 //Python Properties
-_Python_INTERPRETER_PROPERTIES:INTERNAL=Python;3;12;10;64;;cpython-312-x86_64-linux-gnu;/common/home/twm70/miniforge3/lib/python3.12;/common/home/twm70/miniforge3/lib/python3.12;/common/home/twm70/miniforge3/lib/python3.12/site-packages;/common/home/twm70/miniforge3/lib/python3.12/site-packages
-_Python_INTERPRETER_SIGNATURE:INTERNAL=eed126fd23fae87f577d0ebd4e02cd96
+_Python_INTERPRETER_PROPERTIES:INTERNAL=Python;3;12;10;64;32;;cpython-312-x86_64-linux-gnu;abi3;/common/home/twm70/miniforge3/lib/python3.12;/common/home/twm70/miniforge3/lib/python3.12;/common/home/twm70/miniforge3/lib/python3.12/site-packages;/common/home/twm70/miniforge3/lib/python3.12/site-packages
+_Python_INTERPRETER_SIGNATURE:INTERNAL=644df3cba8e1485773674ff1b4838bf4
 //NumPy reason failure
 _Python_NumPy_REASON_FAILURE:INTERNAL=
 //ADVANCED property for variable: boost_headers_DIR

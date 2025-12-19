@@ -55,7 +55,7 @@ void setup_environment_without_bounding_box(Simulation& sim) {
 void setup_environment_for_disney(Simulation& sim) {
     sim.plates.push_back(std::make_unique<ObjectPlate>(0.0, PlateType::bottom, BC::NoSlip));
 
-    TV center(0.5, 0.6828-(2.0/32.0), 0.5);
+    TV center(0.5, 0.6828-(2.0/64.0), 0.5);
     TV half_extents(0.2, 0.2, 1);
     TM R = TM::Identity();
     T mytheta = M_PI / 4;
@@ -101,7 +101,7 @@ void setup_simulation_with_particles(int particle_count, Simulation& sim) {
         sim.Lz = 1;
     #endif
     T ppc = 8;
-    sim.dx = 1.0/32.0;
+    sim.dx = 1.0/64.0;
     sim.particle_volume = sim.dx * sim.dx * sim.dx / ppc; // = Lx*Ly*Lz / T(square_samples.size())
     sim.particle_mass = sim.rho * sim.particle_volume;
     std::mt19937 gen(42);
@@ -257,7 +257,7 @@ int no_plasticity(int particle_count) {
     return static_cast<int>(duration_cast<milliseconds>(end - start).count());
 }
 
-int snow(int particle_count, int end_frame) {
+int snow(int particle_count, int end_frame, int threads) {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
 
@@ -268,7 +268,7 @@ int snow(int particle_count, int end_frame) {
     sim.save_grid = true;
     sim.end_frame = end_frame;
     sim.fps = 24;
-    sim.n_threads = 1;
+    sim.n_threads = threads;
     sim.cfl = 0.1;
     sim.flip_ratio = 0.95; //???
 
@@ -283,7 +283,7 @@ int snow(int particle_count, int end_frame) {
 
     for (int p = 0; p < sim.Np; p++) {
         sim.particles.x[p][0]  += 0.5;
-        sim.particles.x[p][1]  += 1.5-(2.0/32.0);
+        sim.particles.x[p][1]  += 1.5-(2.0/64.0);
         sim.particles.x[p][2]  += 0.5;
     }
 
@@ -318,39 +318,316 @@ void record_to_csv(const std::string& test_name, int particle_count, int duratio
 int main() {
     int duration;
 
-    duration = snow(1000, 20);
+    // 1k particles
+    duration = snow(1000, 20, 1);
     record_to_csv("snow", 1000, duration, 20);
 
-    duration = snow(5000, 20);
+    duration = snow(1000, 20, 2);
+    record_to_csv("snow", 1000, duration, 20);
+
+    duration = snow(1000, 20, 3);
+    record_to_csv("snow", 1000, duration, 20);
+
+    duration = snow(1000, 20, 4);
+    record_to_csv("snow", 1000, duration, 20);
+
+    duration = snow(1000, 20, 5);
+    record_to_csv("snow", 1000, duration, 20);
+
+    duration = snow(1000, 20, 6);
+    record_to_csv("snow", 1000, duration, 20);
+
+    duration = snow(1000, 20, 7);
+    record_to_csv("snow", 1000, duration, 20);
+
+    duration = snow(1000, 20, 8);
+    record_to_csv("snow", 1000, duration, 20);
+
+
+    // 5k particles
+    duration = snow(5000, 20, 1);
     record_to_csv("snow", 5000, duration, 20);
 
-    duration = snow(10000, 20);
+    duration = snow(5000, 20, 2);
+    record_to_csv("snow", 5000, duration, 20);
+
+    duration = snow(5000, 20, 3);
+    record_to_csv("snow", 5000, duration, 20);
+
+    duration = snow(5000, 20, 4);
+    record_to_csv("snow", 5000, duration, 20);
+
+    duration = snow(5000, 20, 5);
+    record_to_csv("snow", 5000, duration, 20);
+
+    duration = snow(5000, 20, 6);
+    record_to_csv("snow", 5000, duration, 20);
+
+    duration = snow(5000, 20, 7);
+    record_to_csv("snow", 5000, duration, 20);
+
+    duration = snow(5000, 20, 8);
+    record_to_csv("snow", 5000, duration, 20);
+
+
+    // 10k particles
+    duration = snow(10000, 20, 1);
     record_to_csv("snow", 10000, duration, 20);
 
-    duration = snow(15000, 20);
-    record_to_csv("snow", 15000, duration, 20);
+    duration = snow(10000, 20, 2);
+    record_to_csv("snow", 10000, duration, 20);
 
-    duration = snow(20000, 20);
+    duration = snow(10000, 20, 3);
+    record_to_csv("snow", 10000, duration, 20);
+
+    duration = snow(10000, 20, 4);
+    record_to_csv("snow", 10000, duration, 20);
+
+    duration = snow(10000, 20, 5);
+    record_to_csv("snow", 10000, duration, 20);
+
+    duration = snow(10000, 20, 6);
+    record_to_csv("snow", 10000, duration, 20);
+
+    duration = snow(10000, 20, 7);
+    record_to_csv("snow", 10000, duration, 20);
+
+    duration = snow(10000, 20, 8);
+    record_to_csv("snow", 10000, duration, 20);
+
+
+    // 20k particles
+    duration = snow(20000, 20, 1);
     record_to_csv("snow", 20000, duration, 20);
 
-    duration = snow(25000, 20);
-    record_to_csv("snow", 25000, duration, 20);
+    duration = snow(20000, 20, 2);
+    record_to_csv("snow", 20000, duration, 20);
 
-    duration = snow(30000, 20);
+    duration = snow(20000, 20, 3);
+    record_to_csv("snow", 20000, duration, 20);
+
+    duration = snow(20000, 20, 4);
+    record_to_csv("snow", 20000, duration, 20);
+
+    duration = snow(20000, 20, 5);
+    record_to_csv("snow", 20000, duration, 20);
+
+    duration = snow(20000, 20, 6);
+    record_to_csv("snow", 20000, duration, 20);
+
+    duration = snow(20000, 20, 7);
+    record_to_csv("snow", 20000, duration, 20);
+
+    duration = snow(20000, 20, 8);
+    record_to_csv("snow", 20000, duration, 20);
+
+
+    // 30k particles
+    duration = snow(30000, 20, 1);
     record_to_csv("snow", 30000, duration, 20);
 
-    duration = snow(35000, 20);
-    record_to_csv("snow", 35000, duration, 20);
+    duration = snow(30000, 20, 2);
+    record_to_csv("snow", 30000, duration, 20);
 
-    duration = snow(40000, 20);
+    duration = snow(30000, 20, 3);
+    record_to_csv("snow", 30000, duration, 20);
+
+    duration = snow(30000, 20, 4);
+    record_to_csv("snow", 30000, duration, 20);
+
+    duration = snow(30000, 20, 5);
+    record_to_csv("snow", 30000, duration, 20);
+
+    duration = snow(30000, 20, 6);
+    record_to_csv("snow", 30000, duration, 20);
+
+    duration = snow(30000, 20, 7);
+    record_to_csv("snow", 30000, duration, 20);
+
+    duration = snow(30000, 20, 8);
+    record_to_csv("snow", 30000, duration, 20);
+
+
+    // 40k particles
+    duration = snow(40000, 20, 1);
     record_to_csv("snow", 40000, duration, 20);
 
-    duration = snow(45000, 20);
-    record_to_csv("snow", 45000, duration, 20);
+    duration = snow(40000, 20, 2);
+    record_to_csv("snow", 40000, duration, 20);
 
-    duration = snow(50000, 20);
+    duration = snow(40000, 20, 3);
+    record_to_csv("snow", 40000, duration, 20);
+
+    duration = snow(40000, 20, 4);
+    record_to_csv("snow", 40000, duration, 20);
+
+    duration = snow(40000, 20, 5);
+    record_to_csv("snow", 40000, duration, 20);
+
+    duration = snow(40000, 20, 6);
+    record_to_csv("snow", 40000, duration, 20);
+
+    duration = snow(40000, 20, 7);
+    record_to_csv("snow", 40000, duration, 20);
+
+    duration = snow(40000, 20, 8);
+    record_to_csv("snow", 40000, duration, 20);
+
+
+    // 50k particles
+    duration = snow(50000, 20, 1);
     record_to_csv("snow", 50000, duration, 20);
 
+    duration = snow(50000, 20, 2);
+    record_to_csv("snow", 50000, duration, 20);
+
+    duration = snow(50000, 20, 3);
+    record_to_csv("snow", 50000, duration, 20);
+
+    duration = snow(50000, 20, 4);
+    record_to_csv("snow", 50000, duration, 20);
+
+    duration = snow(50000, 20, 5);
+    record_to_csv("snow", 50000, duration, 20);
+
+    duration = snow(50000, 20, 6);
+    record_to_csv("snow", 50000, duration, 20);
+
+    duration = snow(50000, 20, 7);
+    record_to_csv("snow", 50000, duration, 20);
+
+    duration = snow(50000, 20, 8);
+    record_to_csv("snow", 50000, duration, 20);
+
+
+    // 60k particles
+    duration = snow(60000, 20, 1);
+    record_to_csv("snow", 60000, duration, 20);
+
+    duration = snow(60000, 20, 2);
+    record_to_csv("snow", 60000, duration, 20);
+
+    duration = snow(60000, 20, 3);
+    record_to_csv("snow", 60000, duration, 20);
+
+    duration = snow(60000, 20, 4);
+    record_to_csv("snow", 60000, duration, 20);
+
+    duration = snow(60000, 20, 5);
+    record_to_csv("snow", 60000, duration, 20);
+
+    duration = snow(60000, 20, 6);
+    record_to_csv("snow", 60000, duration, 20);
+
+    duration = snow(60000, 20, 7);
+    record_to_csv("snow", 60000, duration, 20);
+
+    duration = snow(60000, 20, 8);
+    record_to_csv("snow", 60000, duration, 20);
+
+
+    // 70k particles
+    duration = snow(70000, 20, 1);
+    record_to_csv("snow", 70000, duration, 20);
+
+    duration = snow(70000, 20, 2);
+    record_to_csv("snow", 70000, duration, 20);
+
+    duration = snow(70000, 20, 3);
+    record_to_csv("snow", 70000, duration, 20);
+
+    duration = snow(70000, 20, 4);
+    record_to_csv("snow", 70000, duration, 20);
+
+    duration = snow(70000, 20, 5);
+    record_to_csv("snow", 70000, duration, 20);
+
+    duration = snow(70000, 20, 6);
+    record_to_csv("snow", 70000, duration, 20);
+
+    duration = snow(70000, 20, 7);
+    record_to_csv("snow", 70000, duration, 20);
+
+    duration = snow(70000, 20, 8);
+    record_to_csv("snow", 70000, duration, 20);
+
+
+    // 80k particles
+    duration = snow(80000, 20, 1);
+    record_to_csv("snow", 80000, duration, 20);
+
+    duration = snow(80000, 20, 2);
+    record_to_csv("snow", 80000, duration, 20);
+
+    duration = snow(80000, 20, 3);
+    record_to_csv("snow", 80000, duration, 20);
+
+    duration = snow(80000, 20, 4);
+    record_to_csv("snow", 80000, duration, 20);
+
+    duration = snow(80000, 20, 5);
+    record_to_csv("snow", 80000, duration, 20);
+
+    duration = snow(80000, 20, 6);
+    record_to_csv("snow", 80000, duration, 20);
+
+    duration = snow(80000, 20, 7);
+    record_to_csv("snow", 80000, duration, 20);
+
+    duration = snow(80000, 20, 8);
+    record_to_csv("snow", 80000, duration, 20);
+
+
+    // 90k particles
+    duration = snow(90000, 20, 1);
+    record_to_csv("snow", 90000, duration, 20);
+
+    duration = snow(90000, 20, 2);
+    record_to_csv("snow", 90000, duration, 20);
+
+    duration = snow(90000, 20, 3);
+    record_to_csv("snow", 90000, duration, 20);
+
+    duration = snow(90000, 20, 4);
+    record_to_csv("snow", 90000, duration, 20);
+
+    duration = snow(90000, 20, 5);
+    record_to_csv("snow", 90000, duration, 20);
+
+    duration = snow(90000, 20, 6);
+    record_to_csv("snow", 90000, duration, 20);
+
+    duration = snow(90000, 20, 7);
+    record_to_csv("snow", 90000, duration, 20);
+
+    duration = snow(90000, 20, 8);
+    record_to_csv("snow", 90000, duration, 20);
+
+
+    // 100k particles
+    duration = snow(100000, 20, 1);
+    record_to_csv("snow", 100000, duration, 20);
+
+    duration = snow(100000, 20, 2);
+    record_to_csv("snow", 100000, duration, 20);
+
+    duration = snow(100000, 20, 3);
+    record_to_csv("snow", 100000, duration, 20);
+
+    duration = snow(100000, 20, 4);
+    record_to_csv("snow", 100000, duration, 20);
+
+    duration = snow(100000, 20, 5);
+    record_to_csv("snow", 100000, duration, 20);
+
+    duration = snow(100000, 20, 6);
+    record_to_csv("snow", 100000, duration, 20);
+
+    duration = snow(100000, 20, 7);
+    record_to_csv("snow", 100000, duration, 20);
+
+    duration = snow(100000, 20, 8);
+    record_to_csv("snow", 100000, duration, 20);
 
     return 0;
 }
