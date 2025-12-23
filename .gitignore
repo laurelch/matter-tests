@@ -34,7 +34,7 @@ output/
 
 # CSV results (comment these out if you want to track results)
 # *.csv
-251223_*.csv
+*.csv
 
 # IDE and editor files
 .vscode/
