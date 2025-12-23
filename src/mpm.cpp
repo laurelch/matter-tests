@@ -345,7 +345,8 @@ std::string get_timestamp_filename() {
     return std::string(buffer) + ".csv";
 }
 
-void record_to_csv(const BenchmarkData& data) {
+// Write a single BenchmarkData result to CSV
+void write_result_to_csv(const BenchmarkData& data) {
     static std::string csv_filename = get_timestamp_filename();
     
     std::ofstream out(csv_filename, std::ios::app);
@@ -374,107 +375,116 @@ void record_to_csv(const BenchmarkData& data) {
         << data.total_time_ms << "\n" << std::flush;
 }
 
+// Run test and record to CSV (with optional multiple runs)
+void record_to_csv(int particle_count, int end_frame, int threads, int grid_resolution, int num_runs = 1) {
+    for (int run = 1; run <= num_runs; run++) {
+        write_result_to_csv(snow(particle_count, end_frame, threads, grid_resolution));
+    }
+}
+
 int main() {
     std::cout << "Starting snow benchmark suite..." << std::endl;
     std::cout << "Results will be saved to: " << get_timestamp_filename() << std::endl;
     std::cout << "Format: Particles, Grid Size, Threads, Steps in Frame 01-20, Total Steps, Explicit C++ T(ms)" << std::endl;
     std::cout << std::endl;
 
+    int num_runs = 3;
+
     // 32 Grid Size (1 thread) sweep
     std::cout << "Running 32 grid size (1 thread) sweep..." << std::endl;
-    record_to_csv(snow(10000, 20, 1, 32));
-    record_to_csv(snow(20000, 20, 1, 32));
-    record_to_csv(snow(30000, 20, 1, 32));
-    record_to_csv(snow(40000, 20, 1, 32));
-    record_to_csv(snow(50000, 20, 1, 32));
-    record_to_csv(snow(100000, 20, 1, 32));
-    record_to_csv(snow(200000, 20, 1, 32));
+    record_to_csv(10000, 20, 1, 32, num_runs);
+    record_to_csv(20000, 20, 1, 32, num_runs);
+    record_to_csv(30000, 20, 1, 32, num_runs);
+    record_to_csv(40000, 20, 1, 32, num_runs);
+    record_to_csv(50000, 20, 1, 32, num_runs);
+    record_to_csv(100000, 20, 1, 32, num_runs);
+    record_to_csv(200000, 20, 1, 32, num_runs);
 
     // 64 Grid Size (1 thread) sweep
     std::cout << "Running 64 grid size (1 thread) sweep..." << std::endl;
-    record_to_csv(snow(10000, 20, 1, 64));
-    record_to_csv(snow(20000, 20, 1, 64));
-    record_to_csv(snow(30000, 20, 1, 64));
-    record_to_csv(snow(40000, 20, 1, 64));
-    record_to_csv(snow(50000, 20, 1, 64));
-    record_to_csv(snow(100000, 20, 1, 64));
-    record_to_csv(snow(200000, 20, 1, 64));
+    record_to_csv(10000, 20, 1, 64, num_runs);
+    record_to_csv(20000, 20, 1, 64, num_runs);
+    record_to_csv(30000, 20, 1, 64, num_runs);
+    record_to_csv(40000, 20, 1, 64, num_runs);
+    record_to_csv(50000, 20, 1, 64, num_runs);
+    record_to_csv(100000, 20, 1, 64, num_runs);
+    record_to_csv(200000, 20, 1, 64, num_runs);
 
     // 32 Grid multi-thread sweep
     std::cout << "Running 32 grid size (10k, 50k, 100k, 200k) multi-thread (1, 2, 4, 8, 16, 32, 64) sweep..." << std::endl;
     std::cout << "    Running 32 grid size 10k multi-thread sweep..." << std::endl;
     
-    record_to_csv(snow(10000, 20, 2, 32));
-    record_to_csv(snow(10000, 20, 4, 32));
-    record_to_csv(snow(10000, 20, 8, 32));
-    record_to_csv(snow(10000, 20, 16, 32));
-    record_to_csv(snow(10000, 20, 32, 32));
-    record_to_csv(snow(10000, 20, 64, 32));
+    record_to_csv(10000, 20, 2, 32, num_runs);
+    record_to_csv(10000, 20, 4, 32, num_runs);
+    record_to_csv(10000, 20, 8, 32, num_runs);
+    record_to_csv(10000, 20, 16, 32, num_runs);
+    record_to_csv(10000, 20, 32, 32, num_runs);
+    record_to_csv(10000, 20, 64, 32, num_runs);
 
     std::cout << "    Running 32 grid size 50k multi-thread sweep..." << std::endl;
-    record_to_csv(snow(50000, 20, 1, 32));
-    record_to_csv(snow(50000, 20, 2, 32));
-    record_to_csv(snow(50000, 20, 4, 32));
-    record_to_csv(snow(50000, 20, 8, 32));
-    record_to_csv(snow(50000, 20, 16, 32));
-    record_to_csv(snow(50000, 20, 32, 32));
-    record_to_csv(snow(50000, 20, 64, 32));
+    record_to_csv(50000, 20, 1, 32, num_runs);
+    record_to_csv(50000, 20, 2, 32, num_runs);
+    record_to_csv(50000, 20, 4, 32, num_runs);
+    record_to_csv(50000, 20, 8, 32, num_runs);
+    record_to_csv(50000, 20, 16, 32, num_runs);
+    record_to_csv(50000, 20, 32, 32, num_runs);
+    record_to_csv(50000, 20, 64, 32, num_runs);
 
     std::cout << "    Running 32 grid size 100k multi-thread sweep..." << std::endl;
-    record_to_csv(snow(100000, 20, 1, 32));
-    record_to_csv(snow(100000, 20, 2, 32));
-    record_to_csv(snow(100000, 20, 4, 32));
-    record_to_csv(snow(100000, 20, 8, 32));
-    record_to_csv(snow(100000, 20, 16, 32));
-    record_to_csv(snow(100000, 20, 32, 32));
-    record_to_csv(snow(100000, 20, 64, 32));
+    record_to_csv(100000, 20, 1, 32, num_runs);
+    record_to_csv(100000, 20, 2, 32, num_runs);
+    record_to_csv(100000, 20, 4, 32, num_runs);
+    record_to_csv(100000, 20, 8, 32, num_runs);
+    record_to_csv(100000, 20, 16, 32, num_runs);
+    record_to_csv(100000, 20, 32, 32, num_runs);
+    record_to_csv(100000, 20, 64, 32, num_runs);
 
     std::cout << "    Running 32 grid size 200k multi-thread sweep..." << std::endl;
-    record_to_csv(snow(200000, 20, 1, 32));
-    record_to_csv(snow(200000, 20, 2, 32));
-    record_to_csv(snow(200000, 20, 4, 32));
-    record_to_csv(snow(200000, 20, 8, 32));
-    record_to_csv(snow(200000, 20, 16, 32));
-    record_to_csv(snow(200000, 20, 32, 32));
-    record_to_csv(snow(200000, 20, 64, 32));
+    record_to_csv(200000, 20, 1, 32, num_runs);
+    record_to_csv(200000, 20, 2, 32, num_runs);
+    record_to_csv(200000, 20, 4, 32, num_runs);
+    record_to_csv(200000, 20, 8, 32, num_runs);
+    record_to_csv(200000, 20, 16, 32, num_runs);
+    record_to_csv(200000, 20, 32, 32, num_runs);
+    record_to_csv(200000, 20, 64, 32, num_runs);
 
     // 64 Grid multi-thread sweep
     std::cout << "Running 64 grid size (10k, 50k, 100k, 200k) multi-thread (1, 2, 4, 8, 16, 32, 64) sweep..." << std::endl;
     std::cout << "    Running 64 grid size 10k multi-thread sweep..." << std::endl;
-    record_to_csv(snow(10000, 20, 1, 64));
-    record_to_csv(snow(10000, 20, 2, 64));
-    record_to_csv(snow(10000, 20, 4, 64));
-    record_to_csv(snow(10000, 20, 8, 64));
-    record_to_csv(snow(10000, 20, 16, 64));
-    record_to_csv(snow(10000, 20, 32, 64));
-    record_to_csv(snow(10000, 20, 64, 64));
+    record_to_csv(10000, 20, 1, 64, num_runs);
+    record_to_csv(10000, 20, 2, 64, num_runs);
+    record_to_csv(10000, 20, 4, 64, num_runs);
+    record_to_csv(10000, 20, 8, 64, num_runs);
+    record_to_csv(10000, 20, 16, 64, num_runs);
+    record_to_csv(10000, 20, 32, 64, num_runs);
+    record_to_csv(10000, 20, 64, 64, num_runs);
 
     std::cout << "    Running 64 grid size 50k multi-thread sweep..." << std::endl;
-    record_to_csv(snow(50000, 20, 1, 64));
-    record_to_csv(snow(50000, 20, 2, 64));
-    record_to_csv(snow(50000, 20, 4, 64));
-    record_to_csv(snow(50000, 20, 8, 64));
-    record_to_csv(snow(50000, 20, 16, 64));
-    record_to_csv(snow(50000, 20, 32, 64));
-    record_to_csv(snow(50000, 20, 64, 64));
+    record_to_csv(50000, 20, 1, 64, num_runs);
+    record_to_csv(50000, 20, 2, 64, num_runs);
+    record_to_csv(50000, 20, 4, 64, num_runs);
+    record_to_csv(50000, 20, 8, 64, num_runs);
+    record_to_csv(50000, 20, 16, 64, num_runs);
+    record_to_csv(50000, 20, 32, 64, num_runs);
+    record_to_csv(50000, 20, 64, 64, num_runs);
 
     std::cout << "    Running 64 grid size 100k multi-thread sweep..." << std::endl;
-    record_to_csv(snow(100000, 20, 1, 64));
-    record_to_csv(snow(100000, 20, 2, 64));
-    record_to_csv(snow(100000, 20, 4, 64));
-    record_to_csv(snow(100000, 20, 8, 64));
-    record_to_csv(snow(100000, 20, 16, 64));
-    record_to_csv(snow(100000, 20, 32, 64));
-    record_to_csv(snow(100000, 20, 64, 64));
+    record_to_csv(100000, 20, 1, 64, num_runs);
+    record_to_csv(100000, 20, 2, 64, num_runs);
+    record_to_csv(100000, 20, 4, 64, num_runs);
+    record_to_csv(100000, 20, 8, 64, num_runs);
+    record_to_csv(100000, 20, 16, 64, num_runs);
+    record_to_csv(100000, 20, 32, 64, num_runs);
+    record_to_csv(100000, 20, 64, 64, num_runs);
 
     std::cout << "    Running 64 grid size 200k multi-thread sweep..." << std::endl;
-    record_to_csv(snow(200000, 20, 1, 64));
-    record_to_csv(snow(200000, 20, 2, 64));
-    record_to_csv(snow(200000, 20, 4, 64));
-    record_to_csv(snow(200000, 20, 8, 64));
-    record_to_csv(snow(200000, 20, 16, 64));
-    record_to_csv(snow(200000, 20, 32, 64));
-    record_to_csv(snow(200000, 20, 64, 64));
+    record_to_csv(200000, 20, 1, 64, num_runs);
+    record_to_csv(200000, 20, 2, 64, num_runs);
+    record_to_csv(200000, 20, 4, 64, num_runs);
+    record_to_csv(200000, 20, 8, 64, num_runs);
+    record_to_csv(200000, 20, 16, 64, num_runs);
+    record_to_csv(200000, 20, 32, 64, num_runs);
+    record_to_csv(200000, 20, 64, 64, num_runs);
 
     std::cout << "\nBenchmark complete! Results saved to: " << get_timestamp_filename() << std::endl;
     return 0;
