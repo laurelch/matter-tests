@@ -145,6 +145,21 @@ public:
   T calculateBulkModulus();
   TM NeoHookeanPiola(TM & Fe);
   TM HenckyPiola(TM & Fe);
+  
+  // Getters for benchmarking
+  unsigned int getCurrentTimeStep() const { return current_time_step; }
+  unsigned int getCurrentFrame() const { return frame; }
+  unsigned int getGridSize() const { 
+    #ifdef THREEDIM
+      return Nx * Ny * Nz; 
+    #else
+      return Nx * Ny;
+    #endif
+  }
+  const std::vector<unsigned int>& getStepsPerFrame() const { return steps_per_frame; }
+  
+  // Public member for tracking steps per frame (for benchmarking)
+  std::vector<unsigned int> steps_per_frame;
 
 private:
 

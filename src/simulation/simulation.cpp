@@ -156,6 +156,10 @@ void Simulation::simulate(){
     final_time = end_frame * frame_dt;
 
     T time_tolerance = 1e-15;
+    
+    // Initialize step tracking for benchmarking
+    steps_per_frame.clear();
+    steps_per_frame.reserve(end_frame);
 
     if (save_sim){
         saveInfo();
@@ -179,6 +183,8 @@ void Simulation::simulate(){
         current_time_step++;
         if( frame_dt*(frame+1) - time < time_tolerance ){
             frame++;
+            // Record steps for this frame (for benchmarking)
+            steps_per_frame.push_back(current_time_step);
             std::cout << "End of frame " << frame << std::endl;
             if (save_sim){
                 saveParticleData();

@@ -11,6 +11,9 @@
 #include "objects/object_plate.hpp"
 #include <random>
 #include <cmath>
+#include <ctime>
+#include <chrono>
+#include <iomanip>
 #include "./data_structures.hpp"
 
 
@@ -78,7 +81,7 @@ void setup_environment_only_bounding_box(Simulation& sim) {
 // Setup shared simulation factors
 ////////////////////////////////////////////////////////
 
-void setup_simulation_with_particles(int particle_count, Simulation& sim) {
+void setup_simulation_with_particles(int particle_count, Simulation& sim, int grid_resolution = 64) {
     T theta_deg = 0;
     T theta = theta_deg * M_PI / 180;
     sim.gravity = TV::Zero();
@@ -101,7 +104,7 @@ void setup_simulation_with_particles(int particle_count, Simulation& sim) {
         sim.Lz = 1;
     #endif
     T ppc = 8;
-    sim.dx = 1.0/64.0;
+    sim.dx = 1.0 / static_cast<T>(grid_resolution);  // e.g., 1/32 or 1/64
     sim.particle_volume = sim.dx * sim.dx * sim.dx / ppc; // = Lx*Ly*Lz / T(square_samples.size())
     sim.particle_mass = sim.rho * sim.particle_volume;
     std::mt19937 gen(42);
@@ -119,6 +122,19 @@ void setup_simulation_with_particles(int particle_count, Simulation& sim) {
     }
     sim.grid_reference_point = TV::Zero();
 }
+
+////////////////////////////////////////////////////////
+// Benchmark data structure
+////////////////////////////////////////////////////////
+
+struct BenchmarkData {
+    int num_particles;
+    int grid_resolution;  // e.g., 32 for 32^3 grid, 64 for 64^3 grid
+    int threads;
+    std::vector<int> steps_per_frame;  // Steps at each frame completion
+    int total_steps;
+    int total_time_ms;
+};
 
 ////////////////////////////////////////////////////////
 // Simulations
@@ -257,20 +273,22 @@ int no_plasticity(int particle_count) {
     return static_cast<int>(duration_cast<milliseconds>(end - start).count());
 }
 
-int snow(int particle_count, int end_frame, int threads) {
+// New benchmarking version of snow that returns detailed data
+BenchmarkData snow(int particle_count, int end_frame, int threads, int grid_resolution = 64) {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
 
     Simulation sim;
     std::string name = "snow_" + std::to_string(particle_count);
-    sim.initialize(true, "output/", name);
+    sim.initialize(false, "output/", name);  // Set to false to disable file output
 
-    sim.save_grid = true;
+    sim.save_grid = false;  // Disable grid saving for benchmarking
     sim.end_frame = end_frame;
     sim.fps = 24;
     sim.n_threads = threads;
     sim.cfl = 0.1;
-    sim.flip_ratio = 0.95; //???
+    sim.flip_ratio = 0.95;
+    sim.reduce_verbose = true;  // Reduce console output
 
     sim.elastic_model = ElasticModel::Hencky;
     sim.plastic_model = PlasticModel::Snow;
@@ -279,355 +297,185 @@ int snow(int particle_count, int end_frame, int threads) {
     sim.nu = 0.3;
     sim.rho = 3;
 
-    setup_simulation_with_particles(particle_count, sim);
+    setup_simulation_with_particles(particle_count, sim, grid_resolution);
 
     for (int p = 0; p < sim.Np; p++) {
         sim.particles.x[p][0]  += 0.5;
-        sim.particles.x[p][1]  += 1.5-(2.0/64.0);
+        sim.particles.x[p][1]  += 1.5-(2.0/static_cast<T>(grid_resolution));
         sim.particles.x[p][2]  += 0.5;
     }
 
     setup_environment_for_disney(sim);
-    // NoPlasticity, VM, DP, DPSoft, MCC, VMVisc, DPVisc, MCCVisc, DPMui, MCCMui
-
-    // sim.M = 1.2;
-    // sim.q_cohesion = 5000;
-    // sim.perzyna_exp = 1;
-    // sim.perzyna_visc = 0;
 
     sim.simulate();
 
     auto end = high_resolution_clock::now();
-    return static_cast<int>(duration_cast<milliseconds>(end - start).count());
+    int duration_ms = static_cast<int>(duration_cast<milliseconds>(end - start).count());
+    
+    // Collect benchmark data
+    BenchmarkData data;
+    data.num_particles = sim.Np;
+    data.grid_resolution = grid_resolution;
+    data.threads = threads;
+    data.total_steps = sim.getCurrentTimeStep();
+    
+    // Get exact steps per frame from simulation
+    const auto& frame_steps = sim.getStepsPerFrame();
+    data.steps_per_frame.resize(frame_steps.size());
+    for (size_t i = 0; i < frame_steps.size(); i++) {
+        data.steps_per_frame[i] = static_cast<int>(frame_steps[i]);
+    }
+    
+    data.total_time_ms = duration_ms;
+    
+    return data;
 }
 
 ////////////////////////////////////////////////////////
 // Helper functions
 ////////////////////////////////////////////////////////
 
-void record_to_csv(const std::string& test_name, int particle_count, int duration_ms, int end_frame) {
-    std::ofstream out("results.csv", std::ios::app);
+std::string get_timestamp_filename() {
+    auto now = std::chrono::system_clock::now();
+    auto time_t_now = std::chrono::system_clock::to_time_t(now);
+    std::tm tm_now = *std::localtime(&time_t_now);
+    
+    char buffer[32];
+    std::strftime(buffer, sizeof(buffer), "%y%m%d_%H%M", &tm_now);
+    return std::string(buffer) + ".csv";
+}
+
+void record_to_csv(const BenchmarkData& data) {
+    static std::string csv_filename = get_timestamp_filename();
+    
+    std::ofstream out(csv_filename, std::ios::app);
     if (!out) {
-        std::cerr << "Failed to open results.csv\n";
+        std::cerr << "Failed to open " << csv_filename << "\n";
         return;
     }
-    out << duration_ms << "\n" << std::flush;
-
+    
+    // Write data: Particles, Grid Size, Threads, Frame 01-20 steps, Total Steps, Time
+    out << data.num_particles << "," 
+        << data.grid_resolution << ","
+        << data.threads;
+    
+    // Write individual frame steps (up to frame 20)
+    int frames_to_write = std::min(20, static_cast<int>(data.steps_per_frame.size()));
+    for (int i = 0; i < frames_to_write; i++) {
+        out << "," << data.steps_per_frame[i];
+    }
+    
+    // If we have fewer than 20 frames, pad with zeros
+    for (int i = frames_to_write; i < 20; i++) {
+        out << ",0";
+    }
+    
+    out << "," << data.total_steps << "," 
+        << data.total_time_ms << "\n" << std::flush;
 }
 
 int main() {
-    int duration;
-
-    // 1k particles
-    duration = snow(1000, 20, 1);
-    record_to_csv("snow", 1000, duration, 20);
-
-    duration = snow(1000, 20, 2);
-    record_to_csv("snow", 1000, duration, 20);
-
-    duration = snow(1000, 20, 3);
-    record_to_csv("snow", 1000, duration, 20);
-
-    duration = snow(1000, 20, 4);
-    record_to_csv("snow", 1000, duration, 20);
-
-    duration = snow(1000, 20, 5);
-    record_to_csv("snow", 1000, duration, 20);
-
-    duration = snow(1000, 20, 6);
-    record_to_csv("snow", 1000, duration, 20);
-
-    duration = snow(1000, 20, 7);
-    record_to_csv("snow", 1000, duration, 20);
-
-    duration = snow(1000, 20, 8);
-    record_to_csv("snow", 1000, duration, 20);
-
-
-    // 5k particles
-    duration = snow(5000, 20, 1);
-    record_to_csv("snow", 5000, duration, 20);
-
-    duration = snow(5000, 20, 2);
-    record_to_csv("snow", 5000, duration, 20);
-
-    duration = snow(5000, 20, 3);
-    record_to_csv("snow", 5000, duration, 20);
-
-    duration = snow(5000, 20, 4);
-    record_to_csv("snow", 5000, duration, 20);
-
-    duration = snow(5000, 20, 5);
-    record_to_csv("snow", 5000, duration, 20);
-
-    duration = snow(5000, 20, 6);
-    record_to_csv("snow", 5000, duration, 20);
-
-    duration = snow(5000, 20, 7);
-    record_to_csv("snow", 5000, duration, 20);
-
-    duration = snow(5000, 20, 8);
-    record_to_csv("snow", 5000, duration, 20);
-
-
-    // 10k particles
-    duration = snow(10000, 20, 1);
-    record_to_csv("snow", 10000, duration, 20);
-
-    duration = snow(10000, 20, 2);
-    record_to_csv("snow", 10000, duration, 20);
-
-    duration = snow(10000, 20, 3);
-    record_to_csv("snow", 10000, duration, 20);
-
-    duration = snow(10000, 20, 4);
-    record_to_csv("snow", 10000, duration, 20);
-
-    duration = snow(10000, 20, 5);
-    record_to_csv("snow", 10000, duration, 20);
-
-    duration = snow(10000, 20, 6);
-    record_to_csv("snow", 10000, duration, 20);
-
-    duration = snow(10000, 20, 7);
-    record_to_csv("snow", 10000, duration, 20);
-
-    duration = snow(10000, 20, 8);
-    record_to_csv("snow", 10000, duration, 20);
-
-
-    // 20k particles
-    duration = snow(20000, 20, 1);
-    record_to_csv("snow", 20000, duration, 20);
-
-    duration = snow(20000, 20, 2);
-    record_to_csv("snow", 20000, duration, 20);
-
-    duration = snow(20000, 20, 3);
-    record_to_csv("snow", 20000, duration, 20);
-
-    duration = snow(20000, 20, 4);
-    record_to_csv("snow", 20000, duration, 20);
-
-    duration = snow(20000, 20, 5);
-    record_to_csv("snow", 20000, duration, 20);
-
-    duration = snow(20000, 20, 6);
-    record_to_csv("snow", 20000, duration, 20);
-
-    duration = snow(20000, 20, 7);
-    record_to_csv("snow", 20000, duration, 20);
-
-    duration = snow(20000, 20, 8);
-    record_to_csv("snow", 20000, duration, 20);
-
-
-    // 30k particles
-    duration = snow(30000, 20, 1);
-    record_to_csv("snow", 30000, duration, 20);
-
-    duration = snow(30000, 20, 2);
-    record_to_csv("snow", 30000, duration, 20);
-
-    duration = snow(30000, 20, 3);
-    record_to_csv("snow", 30000, duration, 20);
-
-    duration = snow(30000, 20, 4);
-    record_to_csv("snow", 30000, duration, 20);
-
-    duration = snow(30000, 20, 5);
-    record_to_csv("snow", 30000, duration, 20);
-
-    duration = snow(30000, 20, 6);
-    record_to_csv("snow", 30000, duration, 20);
-
-    duration = snow(30000, 20, 7);
-    record_to_csv("snow", 30000, duration, 20);
-
-    duration = snow(30000, 20, 8);
-    record_to_csv("snow", 30000, duration, 20);
-
-
-    // 40k particles
-    duration = snow(40000, 20, 1);
-    record_to_csv("snow", 40000, duration, 20);
-
-    duration = snow(40000, 20, 2);
-    record_to_csv("snow", 40000, duration, 20);
-
-    duration = snow(40000, 20, 3);
-    record_to_csv("snow", 40000, duration, 20);
-
-    duration = snow(40000, 20, 4);
-    record_to_csv("snow", 40000, duration, 20);
-
-    duration = snow(40000, 20, 5);
-    record_to_csv("snow", 40000, duration, 20);
-
-    duration = snow(40000, 20, 6);
-    record_to_csv("snow", 40000, duration, 20);
-
-    duration = snow(40000, 20, 7);
-    record_to_csv("snow", 40000, duration, 20);
-
-    duration = snow(40000, 20, 8);
-    record_to_csv("snow", 40000, duration, 20);
-
-
-    // 50k particles
-    duration = snow(50000, 20, 1);
-    record_to_csv("snow", 50000, duration, 20);
-
-    duration = snow(50000, 20, 2);
-    record_to_csv("snow", 50000, duration, 20);
-
-    duration = snow(50000, 20, 3);
-    record_to_csv("snow", 50000, duration, 20);
-
-    duration = snow(50000, 20, 4);
-    record_to_csv("snow", 50000, duration, 20);
-
-    duration = snow(50000, 20, 5);
-    record_to_csv("snow", 50000, duration, 20);
-
-    duration = snow(50000, 20, 6);
-    record_to_csv("snow", 50000, duration, 20);
-
-    duration = snow(50000, 20, 7);
-    record_to_csv("snow", 50000, duration, 20);
-
-    duration = snow(50000, 20, 8);
-    record_to_csv("snow", 50000, duration, 20);
-
-
-    // 60k particles
-    duration = snow(60000, 20, 1);
-    record_to_csv("snow", 60000, duration, 20);
-
-    duration = snow(60000, 20, 2);
-    record_to_csv("snow", 60000, duration, 20);
-
-    duration = snow(60000, 20, 3);
-    record_to_csv("snow", 60000, duration, 20);
-
-    duration = snow(60000, 20, 4);
-    record_to_csv("snow", 60000, duration, 20);
-
-    duration = snow(60000, 20, 5);
-    record_to_csv("snow", 60000, duration, 20);
-
-    duration = snow(60000, 20, 6);
-    record_to_csv("snow", 60000, duration, 20);
-
-    duration = snow(60000, 20, 7);
-    record_to_csv("snow", 60000, duration, 20);
-
-    duration = snow(60000, 20, 8);
-    record_to_csv("snow", 60000, duration, 20);
-
-
-    // 70k particles
-    duration = snow(70000, 20, 1);
-    record_to_csv("snow", 70000, duration, 20);
-
-    duration = snow(70000, 20, 2);
-    record_to_csv("snow", 70000, duration, 20);
-
-    duration = snow(70000, 20, 3);
-    record_to_csv("snow", 70000, duration, 20);
-
-    duration = snow(70000, 20, 4);
-    record_to_csv("snow", 70000, duration, 20);
-
-    duration = snow(70000, 20, 5);
-    record_to_csv("snow", 70000, duration, 20);
-
-    duration = snow(70000, 20, 6);
-    record_to_csv("snow", 70000, duration, 20);
-
-    duration = snow(70000, 20, 7);
-    record_to_csv("snow", 70000, duration, 20);
-
-    duration = snow(70000, 20, 8);
-    record_to_csv("snow", 70000, duration, 20);
-
-
-    // 80k particles
-    duration = snow(80000, 20, 1);
-    record_to_csv("snow", 80000, duration, 20);
-
-    duration = snow(80000, 20, 2);
-    record_to_csv("snow", 80000, duration, 20);
-
-    duration = snow(80000, 20, 3);
-    record_to_csv("snow", 80000, duration, 20);
-
-    duration = snow(80000, 20, 4);
-    record_to_csv("snow", 80000, duration, 20);
-
-    duration = snow(80000, 20, 5);
-    record_to_csv("snow", 80000, duration, 20);
-
-    duration = snow(80000, 20, 6);
-    record_to_csv("snow", 80000, duration, 20);
-
-    duration = snow(80000, 20, 7);
-    record_to_csv("snow", 80000, duration, 20);
-
-    duration = snow(80000, 20, 8);
-    record_to_csv("snow", 80000, duration, 20);
-
-
-    // 90k particles
-    duration = snow(90000, 20, 1);
-    record_to_csv("snow", 90000, duration, 20);
-
-    duration = snow(90000, 20, 2);
-    record_to_csv("snow", 90000, duration, 20);
-
-    duration = snow(90000, 20, 3);
-    record_to_csv("snow", 90000, duration, 20);
-
-    duration = snow(90000, 20, 4);
-    record_to_csv("snow", 90000, duration, 20);
-
-    duration = snow(90000, 20, 5);
-    record_to_csv("snow", 90000, duration, 20);
-
-    duration = snow(90000, 20, 6);
-    record_to_csv("snow", 90000, duration, 20);
-
-    duration = snow(90000, 20, 7);
-    record_to_csv("snow", 90000, duration, 20);
-
-    duration = snow(90000, 20, 8);
-    record_to_csv("snow", 90000, duration, 20);
-
-
-    // 100k particles
-    duration = snow(100000, 20, 1);
-    record_to_csv("snow", 100000, duration, 20);
-
-    duration = snow(100000, 20, 2);
-    record_to_csv("snow", 100000, duration, 20);
-
-    duration = snow(100000, 20, 3);
-    record_to_csv("snow", 100000, duration, 20);
-
-    duration = snow(100000, 20, 4);
-    record_to_csv("snow", 100000, duration, 20);
-
-    duration = snow(100000, 20, 5);
-    record_to_csv("snow", 100000, duration, 20);
-
-    duration = snow(100000, 20, 6);
-    record_to_csv("snow", 100000, duration, 20);
-
-    duration = snow(100000, 20, 7);
-    record_to_csv("snow", 100000, duration, 20);
-
-    duration = snow(100000, 20, 8);
-    record_to_csv("snow", 100000, duration, 20);
-
+    std::cout << "Starting snow benchmark suite..." << std::endl;
+    std::cout << "Results will be saved to: " << get_timestamp_filename() << std::endl;
+    std::cout << "Format: Particles, Grid Size, Threads, Steps in Frame 01-20, Total Steps, Explicit C++ T(ms)" << std::endl;
+    std::cout << std::endl;
+
+    // 32 Grid Size (1 thread) sweep
+    std::cout << "Running 32 grid size (1 thread) sweep..." << std::endl;
+    record_to_csv(snow(10000, 20, 1, 32));
+    record_to_csv(snow(20000, 20, 1, 32));
+    record_to_csv(snow(30000, 20, 1, 32));
+    record_to_csv(snow(40000, 20, 1, 32));
+    record_to_csv(snow(50000, 20, 1, 32));
+    record_to_csv(snow(100000, 20, 1, 32));
+    record_to_csv(snow(200000, 20, 1, 32));
+
+    // 64 Grid Size (1 thread) sweep
+    std::cout << "Running 64 grid size (1 thread) sweep..." << std::endl;
+    record_to_csv(snow(10000, 20, 1, 64));
+    record_to_csv(snow(20000, 20, 1, 64));
+    record_to_csv(snow(30000, 20, 1, 64));
+    record_to_csv(snow(40000, 20, 1, 64));
+    record_to_csv(snow(50000, 20, 1, 64));
+    record_to_csv(snow(100000, 20, 1, 64));
+    record_to_csv(snow(200000, 20, 1, 64));
+
+    // 32 Grid multi-thread sweep
+    std::cout << "Running 32 grid size (10k, 50k, 100k, 200k) multi-thread (1, 2, 4, 8, 16, 32, 64) sweep..." << std::endl;
+    std::cout << "    Running 32 grid size 10k multi-thread sweep..." << std::endl;
+    
+    record_to_csv(snow(10000, 20, 2, 32));
+    record_to_csv(snow(10000, 20, 4, 32));
+    record_to_csv(snow(10000, 20, 8, 32));
+    record_to_csv(snow(10000, 20, 16, 32));
+    record_to_csv(snow(10000, 20, 32, 32));
+    record_to_csv(snow(10000, 20, 64, 32));
+
+    std::cout << "    Running 32 grid size 50k multi-thread sweep..." << std::endl;
+    record_to_csv(snow(50000, 20, 1, 32));
+    record_to_csv(snow(50000, 20, 2, 32));
+    record_to_csv(snow(50000, 20, 4, 32));
+    record_to_csv(snow(50000, 20, 8, 32));
+    record_to_csv(snow(50000, 20, 16, 32));
+    record_to_csv(snow(50000, 20, 32, 32));
+    record_to_csv(snow(50000, 20, 64, 32));
+
+    std::cout << "    Running 32 grid size 100k multi-thread sweep..." << std::endl;
+    record_to_csv(snow(100000, 20, 1, 32));
+    record_to_csv(snow(100000, 20, 2, 32));
+    record_to_csv(snow(100000, 20, 4, 32));
+    record_to_csv(snow(100000, 20, 8, 32));
+    record_to_csv(snow(100000, 20, 16, 32));
+    record_to_csv(snow(100000, 20, 32, 32));
+    record_to_csv(snow(100000, 20, 64, 32));
+
+    std::cout << "    Running 32 grid size 200k multi-thread sweep..." << std::endl;
+    record_to_csv(snow(200000, 20, 1, 32));
+    record_to_csv(snow(200000, 20, 2, 32));
+    record_to_csv(snow(200000, 20, 4, 32));
+    record_to_csv(snow(200000, 20, 8, 32));
+    record_to_csv(snow(200000, 20, 16, 32));
+    record_to_csv(snow(200000, 20, 32, 32));
+    record_to_csv(snow(200000, 20, 64, 32));
+
+    // 64 Grid multi-thread sweep
+    std::cout << "Running 64 grid size (10k, 50k, 100k, 200k) multi-thread (1, 2, 4, 8, 16, 32, 64) sweep..." << std::endl;
+    std::cout << "    Running 64 grid size 10k multi-thread sweep..." << std::endl;
+    record_to_csv(snow(10000, 20, 1, 64));
+    record_to_csv(snow(10000, 20, 2, 64));
+    record_to_csv(snow(10000, 20, 4, 64));
+    record_to_csv(snow(10000, 20, 8, 64));
+    record_to_csv(snow(10000, 20, 16, 64));
+    record_to_csv(snow(10000, 20, 32, 64));
+    record_to_csv(snow(10000, 20, 64, 64));
+
+    std::cout << "    Running 64 grid size 50k multi-thread sweep..." << std::endl;
+    record_to_csv(snow(50000, 20, 1, 64));
+    record_to_csv(snow(50000, 20, 2, 64));
+    record_to_csv(snow(50000, 20, 4, 64));
+    record_to_csv(snow(50000, 20, 8, 64));
+    record_to_csv(snow(50000, 20, 16, 64));
+    record_to_csv(snow(50000, 20, 32, 64));
+    record_to_csv(snow(50000, 20, 64, 64));
+
+    std::cout << "    Running 64 grid size 100k multi-thread sweep..." << std::endl;
+    record_to_csv(snow(100000, 20, 1, 64));
+    record_to_csv(snow(100000, 20, 2, 64));
+    record_to_csv(snow(100000, 20, 4, 64));
+    record_to_csv(snow(100000, 20, 8, 64));
+    record_to_csv(snow(100000, 20, 16, 64));
+    record_to_csv(snow(100000, 20, 32, 64));
+    record_to_csv(snow(100000, 20, 64, 64));
+
+    std::cout << "    Running 64 grid size 200k multi-thread sweep..." << std::endl;
+    record_to_csv(snow(200000, 20, 1, 64));
+    record_to_csv(snow(200000, 20, 2, 64));
+    record_to_csv(snow(200000, 20, 4, 64));
+    record_to_csv(snow(200000, 20, 8, 64));
+    record_to_csv(snow(200000, 20, 16, 64));
+    record_to_csv(snow(200000, 20, 32, 64));
+    record_to_csv(snow(200000, 20, 64, 64));
+
+    std::cout << "\nBenchmark complete! Results saved to: " << get_timestamp_filename() << std::endl;
     return 0;
 }

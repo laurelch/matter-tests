@@ -1,9 +1,53 @@
+# Build directories
 build/
-*.DS_Store
-postprocess/backup/
-*.vscode/
+_deps/
+CMakeFiles/
+Testing/
+bin/
+lib/
+
+# CMake files
+CMakeCache.txt
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+*[0-9]*_*.cmake
+
+# Compiled binaries
+*.out
+*.exe
+*.dylib
+*.so
+*.a
+*.o
+*.d
+src/mpm
+tests/tests
+
+# Dependencies
 deps/
+
+# Results and output files
 output/
-env/
+*.ply
+*.vdb
+
+# CSV results (comment these out if you want to track results)
+# *.csv
+251223_*.csv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python environment
 *.egg-info/
 __pycache__/
+env/
+
+# Documentation
+README_BENCHMARKING.md

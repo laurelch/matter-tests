@@ -1,5 +1,0 @@
-if(EXISTS "/common/home/twm70/Repos/matter/tests/tests[1]_tests.cmake")
-  include("/common/home/twm70/Repos/matter/tests/tests[1]_tests.cmake")
-else()
-  add_test(tests_NOT_BUILT tests_NOT_BUILT)
-endif()
