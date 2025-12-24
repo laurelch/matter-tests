@@ -157,9 +157,14 @@ void Simulation::simulate(){
 
     T time_tolerance = 1e-15;
     
-    // Initialize step tracking for benchmarking
+    // Initialize step and time tracking for benchmarking
     steps_per_frame.clear();
     steps_per_frame.reserve(end_frame);
+    frame_times_ms.clear();
+    frame_times_ms.reserve(end_frame);
+
+    // Record simulation start time
+    auto sim_start_time = std::chrono::high_resolution_clock::now();
 
     if (save_sim){
         saveInfo();
@@ -183,8 +188,12 @@ void Simulation::simulate(){
         current_time_step++;
         if( frame_dt*(frame+1) - time < time_tolerance ){
             frame++;
-            // Record steps for this frame (for benchmarking)
+            // Record steps and cumulative time for this frame (for benchmarking)
             steps_per_frame.push_back(current_time_step);
+            auto current_time = std::chrono::high_resolution_clock::now();
+            double elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                current_time - sim_start_time).count();
+            frame_times_ms.push_back(elapsed_ms);
             std::cout << "End of frame " << frame << std::endl;
             if (save_sim){
                 saveParticleData();

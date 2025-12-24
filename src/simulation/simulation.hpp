@@ -157,9 +157,11 @@ public:
     #endif
   }
   const std::vector<unsigned int>& getStepsPerFrame() const { return steps_per_frame; }
+  const std::vector<double>& getFrameTimesMs() const { return frame_times_ms; }
   
-  // Public member for tracking steps per frame (for benchmarking)
-  std::vector<unsigned int> steps_per_frame;
+  // Public members for tracking benchmarking data
+  std::vector<unsigned int> steps_per_frame;  // Cumulative steps at each frame
+  std::vector<double> frame_times_ms;         // Cumulative time (ms) at each frame
 
 private:
 
