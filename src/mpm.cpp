@@ -359,30 +359,30 @@ void write_result_to_csv(const BenchmarkData& data) {
         return;
     }
 
-    // Write data: Particles, Grid Size, Threads, Frame 01-20 steps, Frame 01-20 times, Total Steps, Total Time
+    // Write data: Particles, Grid Size, Threads, Frame 01-30 steps, Frame 01-30 times, Total Steps, Total Time
     out << data.num_particles << "," 
         << data.grid_resolution << ","
         << data.threads;
 
-    // Write individual frame steps (up to frame 20)
-    int frames_to_write = std::min(20, static_cast<int>(data.steps_per_frame.size()));
+    // Write individual frame steps (up to frame 30)
+    int frames_to_write = std::min(30, static_cast<int>(data.steps_per_frame.size()));
     for (int i = 0; i < frames_to_write; i++) {
         out << "," << data.steps_per_frame[i];
     }
 
-    // If we have fewer than 20 frames, pad with zeros
-    for (int i = frames_to_write; i < 20; i++) {
+    // If we have fewer than 30 frames, pad with zeros
+    for (int i = frames_to_write; i < 30; i++) {
         out << ",0";
     }
     
-    // Write individual frame times in ms (up to frame 20)
-    int frame_times_to_write = std::min(20, static_cast<int>(data.frame_times_ms.size()));
+    // Write individual frame times in ms (up to frame 30)
+    int frame_times_to_write = std::min(30, static_cast<int>(data.frame_times_ms.size()));
     for (int i = 0; i < frame_times_to_write; i++) {
         out << "," << static_cast<int>(data.frame_times_ms[i]);  // Convert to int for cleaner CSV
     }
 
     // Pad frame times with zeros if needed
-    for (int i = frame_times_to_write; i < 20; i++) {
+    for (int i = frame_times_to_write; i < 30; i++) {
         out << ",0";
     }
 
@@ -403,6 +403,7 @@ int main() {
     std::cout << "Format: Particles, Grid Size, Threads, Steps in Frame 01-20, Total Steps, Explicit C++ T(ms)" << std::endl;
     std::cout << std::endl;
 
+    int num_cores = 32;
     int num_frames = 30;
     int num_runs = 3;
     int grid_size = 16;
@@ -486,12 +487,14 @@ int main() {
     record_to_csv(10000, num_frames, 9, grid_size, num_runs);
     record_to_csv(10000, num_frames, 10, grid_size, num_runs);
 
-    record_to_csv(10000, num_frames, 12, grid_size, num_runs);
-    record_to_csv(10000, num_frames, 16, grid_size, num_runs);
-    record_to_csv(10000, num_frames, 20, grid_size, num_runs);
-    record_to_csv(10000, num_frames, 24, grid_size, num_runs);
-    record_to_csv(10000, num_frames, 28, grid_size, num_runs);
-    record_to_csv(10000, num_frames, 32, grid_size, num_runs);
+    if (num_cores > 10) {
+        record_to_csv(10000, num_frames, 12, grid_size, num_runs);
+        record_to_csv(10000, num_frames, 16, grid_size, num_runs);
+        record_to_csv(10000, num_frames, 20, grid_size, num_runs);
+        record_to_csv(10000, num_frames, 24, grid_size, num_runs);
+        record_to_csv(10000, num_frames, 28, grid_size, num_runs);
+        record_to_csv(10000, num_frames, 32, grid_size, num_runs);
+    }
 
     std::cout << "    Running " << grid_size << " grid size 50k multi-thread sweep..." << std::endl;
     record_to_csv(50000, num_frames, 1, grid_size, num_runs);
@@ -505,12 +508,14 @@ int main() {
     record_to_csv(50000, num_frames, 9, grid_size, num_runs);
     record_to_csv(50000, num_frames, 10, grid_size, num_runs);
 
-    record_to_csv(50000, num_frames, 12, grid_size, num_runs);
-    record_to_csv(50000, num_frames, 16, grid_size, num_runs);
-    record_to_csv(50000, num_frames, 20, grid_size, num_runs);
-    record_to_csv(50000, num_frames, 24, grid_size, num_runs);
-    record_to_csv(50000, num_frames, 28, grid_size, num_runs);
-    record_to_csv(50000, num_frames, 32, grid_size, num_runs);
+    if (num_cores > 10) {
+        record_to_csv(50000, num_frames, 12, grid_size, num_runs);
+        record_to_csv(50000, num_frames, 16, grid_size, num_runs);
+        record_to_csv(50000, num_frames, 20, grid_size, num_runs);
+        record_to_csv(50000, num_frames, 24, grid_size, num_runs);
+        record_to_csv(50000, num_frames, 28, grid_size, num_runs);
+        record_to_csv(50000, num_frames, 32, grid_size, num_runs);
+    }
 
     std::cout << "    Running " << grid_size << " grid size 100k multi-thread sweep..." << std::endl;
     record_to_csv(100000, num_frames, 1, grid_size, num_runs);
@@ -524,12 +529,14 @@ int main() {
     record_to_csv(100000, num_frames, 9, grid_size, num_runs);
     record_to_csv(100000, num_frames, 10, grid_size, num_runs);
 
-    record_to_csv(100000, num_frames, 12, grid_size, num_runs);
-    record_to_csv(100000, num_frames, 16, grid_size, num_runs);
-    record_to_csv(100000, num_frames, 20, grid_size, num_runs);
-    record_to_csv(100000, num_frames, 24, grid_size, num_runs);
-    record_to_csv(100000, num_frames, 28, grid_size, num_runs);
-    record_to_csv(100000, num_frames, 32, grid_size, num_runs);
+    if (num_cores > 10) {
+        record_to_csv(100000, num_frames, 12, grid_size, num_runs);
+        record_to_csv(100000, num_frames, 16, grid_size, num_runs);
+        record_to_csv(100000, num_frames, 20, grid_size, num_runs);
+        record_to_csv(100000, num_frames, 24, grid_size, num_runs);
+        record_to_csv(100000, num_frames, 28, grid_size, num_runs);
+        record_to_csv(100000, num_frames, 32, grid_size, num_runs);
+    }
 
     std::cout << "    Running " << grid_size << " grid size 200k multi-thread sweep..." << std::endl;
     record_to_csv(200000, num_frames, 1, grid_size, num_runs);
@@ -543,12 +550,14 @@ int main() {
     record_to_csv(200000, num_frames, 9, grid_size, num_runs);
     record_to_csv(200000, num_frames, 10, grid_size, num_runs);
 
-    record_to_csv(200000, num_frames, 12, grid_size, num_runs);
-    record_to_csv(200000, num_frames, 16, grid_size, num_runs);
-    record_to_csv(200000, num_frames, 20, grid_size, num_runs);
-    record_to_csv(200000, num_frames, 24, grid_size, num_runs);
-    record_to_csv(200000, num_frames, 28, grid_size, num_runs);
-    record_to_csv(200000, num_frames, 32, grid_size, num_runs);
+    if (num_cores > 10) {
+        record_to_csv(200000, num_frames, 12, grid_size, num_runs);
+        record_to_csv(200000, num_frames, 16, grid_size, num_runs);
+        record_to_csv(200000, num_frames, 20, grid_size, num_runs);
+        record_to_csv(200000, num_frames, 24, grid_size, num_runs);
+        record_to_csv(200000, num_frames, 28, grid_size, num_runs);
+        record_to_csv(200000, num_frames, 32, grid_size, num_runs);
+    }
 
     std::cout << "\nBenchmark complete! Results saved to: " << get_timestamp_filename() << std::endl;
     return 0;
